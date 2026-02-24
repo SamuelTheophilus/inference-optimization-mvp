@@ -22,7 +22,7 @@ By transitioning from FP32 (Full Precision) to FP16 (Optimized) across multiple 
 
 ### 1. Clone the Repository
 ```bash
-git clone <repository-url>
+git clone https://github.com/SamuelTheophilus/inference-optimization-mvp.git
 cd inference-optimization-mvp
 ```
 
