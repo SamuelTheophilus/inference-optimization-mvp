@@ -24,6 +24,7 @@ By transitioning from FP32 (Full Precision) to FP16 (Optimized) across multiple 
 ```bash
 git clone https://github.com/SamuelTheophilus/inference-optimization-mvp.git
 cd inference-optimization-mvp
+mkdir results/
 ```
 
 ### 2. Environment Setup (using `uv`)
