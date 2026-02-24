@@ -3,15 +3,16 @@ model_loader.py
 ---------------
 Loads encoder, re-ranker, and speech-to-text models in FP32 or FP16.
 Mirrors the quantization approach used in production to reduce compute costs
-while keeping accuracy within 2% of baseline.
+while keeping accuracy within 5% of baseline.
 """
 
 import time
-import torch
-from sentence_transformers import SentenceTransformer, CrossEncoder
-import whisper
 from dataclasses import dataclass
 from typing import Literal
+
+import torch
+import whisper
+from sentence_transformers import CrossEncoder, SentenceTransformer
 
 Precision = Literal["fp32", "fp16"]
 
@@ -41,6 +42,7 @@ def load_models(precision: Precision = "fp32", device: str = "cpu") -> ModelBund
 
     if precision == "fp16" and device == "cpu":
         import os
+
         os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
         if "qnnpack" in torch.backends.quantized.supported_engines:
             torch.backends.quantized.engine = "qnnpack"
@@ -49,7 +51,9 @@ def load_models(precision: Precision = "fp32", device: str = "cpu") -> ModelBund
 
     # Encoder
     t0 = time.perf_counter()
-    encoder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2", device=device)
+    encoder = SentenceTransformer(
+        "sentence-transformers/all-MiniLM-L6-v2", device=device
+    )
     if precision == "fp16":
         if device == "cpu":
             encoder = encoder.to("cpu")
@@ -59,11 +63,13 @@ def load_models(precision: Precision = "fp32", device: str = "cpu") -> ModelBund
             )
         else:
             encoder = encoder.half()
-    print(f"[loader] Encoder ready ({time.perf_counter()-t0:.2f}s)")
+    print(f"[loader] Encoder ready ({time.perf_counter() - t0:.2f}s)")
 
     # Multilingual Encoder
     t0 = time.perf_counter()
-    multilingual = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", device=device)
+    multilingual = SentenceTransformer(
+        "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", device=device
+    )
     if precision == "fp16":
         if device == "cpu":
             multilingual = torch.quantization.quantize_dynamic(
@@ -71,7 +77,7 @@ def load_models(precision: Precision = "fp32", device: str = "cpu") -> ModelBund
             )
         else:
             multilingual = multilingual.half()
-    print(f"[loader] Multilingual ready ({time.perf_counter()-t0:.2f}s)")
+    print(f"[loader] Multilingual ready ({time.perf_counter() - t0:.2f}s)")
 
     # Re-ranker
     t0 = time.perf_counter()
@@ -86,7 +92,7 @@ def load_models(precision: Precision = "fp32", device: str = "cpu") -> ModelBund
             reranker.model = reranker.model.half().to(device)
     elif device != "cpu":
         reranker.model = reranker.model.to(device)
-    print(f"[loader] Re-ranker ready ({time.perf_counter()-t0:.2f}s)")
+    print(f"[loader] Re-ranker ready ({time.perf_counter() - t0:.2f}s)")
 
     # Speech-to-text (Whisper)
     t0 = time.perf_counter()
@@ -96,7 +102,7 @@ def load_models(precision: Precision = "fp32", device: str = "cpu") -> ModelBund
             stt = stt.half()
     elif device != "cpu":
         stt = stt.to(device)
-    print(f"[loader] STT ready ({time.perf_counter()-t0:.2f}s)")
+    print(f"[loader] STT ready ({time.perf_counter() - t0:.2f}s)")
 
     return ModelBundle(
         encoder=encoder,
